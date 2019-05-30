@@ -147,6 +147,11 @@ function New-Package
 
             if ($PassThru)
             {
+                if ($Version.Revision -eq 0 ){
+                    if (Test-Path -Path "$PackageFolderPath\$Name.$($Version.ToString(3)).nupkg") {
+                        Rename-Item -Path "$PackageFolderPath\$Name.$($Version.ToString(3)).nupkg" -NewName "$Name.$Version.nupkg"
+                    }
+                }
                 Get-Item -Path "$PackageFolderPath\$Name.$Version.nupkg"
             }
         }
