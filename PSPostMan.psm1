@@ -588,15 +588,15 @@ function New-ModulePackage
         if ($_.Key -is 'array')
         {
             foreach ($p in $_.Key)
-            { 
-                $val = $val.$p 
+            {
+                $val = $val.$p
             }
         }
         elseif ($manifest.($_.Key))
         {
             $val = $manifest.($_.Key)
         }
-        $newPackageParams.($_.Value) = $val
+            $newPackageParams.($_.Value) = $val
     }
     New-PmPackage @newPackageParams
 }
