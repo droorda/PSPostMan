@@ -4,6 +4,122 @@ $Defaults = @{
     NuGetExeUrl = 'https://dist.nuget.org/win-x86-commandline/latest/nuget.exe'
 }
 
+function Set-PackageCert {
+    [OutputType([System.IO.FileInfo])]
+    [CmdletBinding()]
+    param
+    (
+        [Parameter(Mandatory)]
+        [ValidateNotNullOrEmpty()]
+        [ValidateScript({
+                if ($_ -notmatch '\.nupkg$')
+                {
+                    throw 'Invalid file path. Extension must be NUPKG.'
+                }
+                else
+                {
+                    $true
+                }
+            })]
+        [string]$Path,
+
+        [string]$CertificatePath,
+        [string]$CertificateStoreName,
+        [string]$CertificateStoreLocation,
+        [string]$CertificateSubjectName,
+        [string]$CertificateFingerprint,
+        [string]$CertificatePassword,
+        [string]$HashAlgorithm,
+        [string]$Timestamper,
+        [string]$TimestampHashAlgorithm,
+
+        [Parameter()]
+        [ValidateNotNullOrEmpty()]
+        [ValidateScript({
+                if (-not (Test-Path -Path $_ -PathType Container))
+                {
+                    throw "The folder '$_' does not exist."
+                }
+                else
+                {
+                    $true
+                }
+            })]
+        [string]$OutputDirectory,
+        [switch]$Overwrite,
+        [string]$Verbosity,
+        [switch]$NonInteractive =  $true,
+        [string]$ConfigFile,
+        [switch]$ForceEnglishOutput,
+        [Parameter()]
+        [ValidateNotNullOrEmpty()]
+        [switch]$PassThru
+    )
+    begin
+    {
+        $ErrorActionPreference = 'Stop'
+    }
+    process
+    {
+        try
+        {
+
+            #region Build the nuget spec
+            $specParamNames = @(
+                'OutputDirectory',
+                'CertificatePath',
+                'CertificateStoreName',
+                'CertificateStoreLocation',
+                'CertificateSubjectName',
+                'CertificateFingerprint',
+                'CertificatePassword',
+                'HashAlgorithm',
+                'Timestamper',
+                'TimestampHashAlgorithm',
+                'Overwrite',
+                'Verbosity',
+                'NonInteractive',
+                'ConfigFile',
+                'ForceEnglishOutput'
+            )
+
+            $specParams = [ordered]@{
+                "$((get-item($Path)).FullName)" = $Null
+            }
+            @($specParamNames).where({ $PSBoundParameters.ContainsKey($_) }).foreach({
+                    $specParams[$_] = (Get-Variable -Name $_).Value
+                })
+
+            if ($PSCmdlet.MyInvocation.BoundParameters["Verbosedetailed"].IsPresent){
+                if ( -not $specParams.Verbosity) {
+                    $specParams.Verbosity = 'detailed'
+                }
+            }
+            #endregion
+
+            ## Create the nuget package
+            $null = Invoke-NuGet -Action 'sign' -Arguments $specParams
+
+            if ($PassThru)
+            {
+                if ($OutputDirectory){
+                    "$((get-item $OutputDirectory).fullname)\$(split-Path -Path $Path -Leaf)"
+                } else {
+                    $Path
+                }
+
+            }
+        }
+        catch
+        {
+            $PSCmdlet.ThrowTerminatingError($_)
+        }
+        finally
+        {
+        }
+    }
+}
+
 function New-Package
 {
     [OutputType([System.IO.FileInfo])]
@@ -98,6 +214,10 @@ function New-Package
 
         [Parameter()]
         [ValidateNotNullOrEmpty()]
+        [string[]]$files,
+
+        [Parameter()]
+        [ValidateNotNullOrEmpty()]
         [switch]$PassThru
     )
     begin
@@ -121,7 +241,8 @@ function New-Package
                 'IconUrl',
                 'ReleaseNotes',
                 'Tags',
-                'Dependencies'
+                'Dependencies',
+                'Files'
             )
 
             $tempSpecFilePath = "$env:TEMP\$((New-Guid).Guid).nuspec"
@@ -173,7 +294,7 @@ function Invoke-NuGet
     (
         [Parameter(Mandatory)]
         [ValidateNotNullOrEmpty()]
-        [ValidateSet('delete', 'list', 'pack', 'push')]
+        [ValidateSet('delete', 'list', 'pack', 'push', 'sign')]
         [string]$Action,
 
         [Parameter(Mandatory)]
@@ -184,7 +305,7 @@ function Invoke-NuGet
     try
     {
         $argArr = @()
-        $argArr += $Arguments.GetEnumerator() | Sort-Object Value | foreach {
+        $argArr += $Arguments.GetEnumerator() | Sort-Object Value | ForEach-Object {
             if (-not $_.Value)
             {
                 '"{0}"' -f $_.Key
@@ -208,6 +329,8 @@ function Invoke-NuGet
             PassThru                = $true
             NoNewWindow             = $true
         }
+
+        write-verbose "Calling Nuget with '$($startProcessParams.ArgumentList)'"
 
         $cmd = Start-Process @startProcessParams
         $cmdOutput = Get-Content -Path $stdOutTempFile.FullName -Raw
@@ -265,7 +388,7 @@ function New-PackageSpec
 
         [Parameter()]
         [ValidateNotNullOrEmpty()]
-        [string]$Authors = 'Adam Bertram',
+        [string]$Authors = 'people',
 
         [Parameter()]
         [ValidateNotNullOrEmpty()]
@@ -298,6 +421,10 @@ function New-PackageSpec
         [Parameter()]
         [ValidateNotNullOrEmpty()]
         [string[]]$Tags,
+
+        [Parameter()]
+        [ValidateNotNullOrEmpty()]
+        [string[]]$files,
 
         [Parameter()]
         [ValidateNotNullOrEmpty()]
@@ -364,6 +491,18 @@ function New-PackageSpec
                     }
                     $null = $xDoc.package.metadata.AppendChild($xNode)
                 })
+                if ($files)
+                {
+                    $xNode = $xDoc.CreateElement('files')
+                    @($files).foreach({
+                        $_
+                                $xDep = $xNode.AppendChild($xDoc.CreateElement('file'))
+                                $xDep.SetAttribute('src', $_)
+                                $xDep.SetAttribute('target', $_)
+                                $null = $xNode.AppendChild($xDep)
+                            })
+                    $null = $xDoc.package.AppendChild($xNode)
+                }
 
             $xDoc.Save($FilePath)
             Get-Item -Path $FilePath
@@ -572,6 +711,7 @@ function New-ModulePackage
         'Author' = 'Authors'
         @('PrivateData', 'PSData', 'Tags') = 'Tags'
         @('PrivateData', 'PSData', 'ProjectUri') = 'ProjectUrl'
+        'FileList' = 'files'
     }
 
     $newPackageParams = @{
@@ -584,7 +724,7 @@ function New-ModulePackage
         $newPackageParams.PassThru = $true
     }
 
-    $manifestAttribToPackageMap.GetEnumerator() | foreach {
+    $manifestAttribToPackageMap.GetEnumerator() | ForEach-Object {
         $val = $manifest.Clone()
         if ($_.Key -is 'array')
         {
@@ -768,14 +908,14 @@ function Find-Package
     {
         try
         {
-            if ($PSBoundParameters.ContainsKey('Name'))
-            {
-                $whereFilter = { $_ -match "^$($Name -join '|')" }
-            }
-            else
-            {
-                $whereFilter = { $_ }
-            }
+            # if ($PSBoundParameters.ContainsKey('Name'))
+            # {
+            #     $whereFilter = { $_ -match "^$($Name -join '|')" }
+            # }
+            # else
+            # {
+            #     $whereFilter = { $_ }
+            # }
 
             $nugetArgs = @{
                 Source = $FeedUrl
