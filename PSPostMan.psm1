@@ -585,6 +585,7 @@ function New-ModulePackage
     }
 
     $manifestAttribToPackageMap.GetEnumerator() | foreach {
+        $val = $manifest.Clone()
         if ($_.Key -is 'array')
         {
             foreach ($p in $_.Key)
@@ -592,11 +593,13 @@ function New-ModulePackage
                 $val = $val.$p
             }
         }
-        elseif ($manifest.($_.Key))
+        else
         {
             $val = $manifest.($_.Key)
         }
+        if ($val) {
             $newPackageParams.($_.Value) = $val
+        }
     }
     New-PmPackage @newPackageParams
 }
