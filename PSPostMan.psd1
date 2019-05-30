@@ -1,6 +1,6 @@
 @{
 	RootModule = 'PSPostMan.psm1'
-	ModuleVersion = '1.0'
+	ModuleVersion = '1.0.32'
 	GUID = 'c11833c7-2c18-40cc-be07-8c7238ec8d6f'
 	Author = 'Adam Bertram'
 	CompanyName = 'Adam the Automator, LLC'
