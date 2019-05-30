@@ -12,7 +12,7 @@ function New-Package
     (
         [Parameter(Mandatory)]
         [ValidateNotNullOrEmpty()]
-        [ValidateScript({ 
+        [ValidateScript({
                 if (-not (Test-Path -Path $_ -PathType Container))
                 {
                     throw "The folder '$_' does not exist."
@@ -34,7 +34,7 @@ function New-Package
 
         [Parameter()]
         [ValidateNotNullOrEmpty()]
-        [ValidateScript({ 
+        [ValidateScript({
                 if (-not (Test-Path -Path $_ -PathType Container))
                 {
                     throw "The folder '$_' does not exist."
@@ -142,9 +142,9 @@ function New-Package
                 '-NoPackageAnalysis' = $null
                 $packSpec.FullName = $null;
                 OutputDirectory = $PackageFolderPath.TrimEnd('\')
-                BasePath = $Path.TrimEnd('\') 
+                BasePath = $Path.TrimEnd('\')
             }
-            
+
             if ($PassThru)
             {
                 Get-Item -Path "$PackageFolderPath\$Name.$Version.nupkg"
@@ -153,8 +153,8 @@ function New-Package
         catch
         {
             $PSCmdlet.ThrowTerminatingError($_)
-        } 
-        finally 
+        }
+        finally
         {
             Remove-Item -Path $tempSpecFilePath -ErrorAction Ignore
         }
@@ -173,7 +173,7 @@ function Invoke-NuGet
 
         [Parameter(Mandatory)]
         [ValidateNotNullOrEmpty()]
-        [hashtable]$Arguments       
+        [hashtable]$Arguments
     )
 
     try
@@ -210,16 +210,16 @@ function Invoke-NuGet
         if ($cmd.ExitCode -ne 0)
         {
             throw $cmdError
-        } 
-        else 
+        }
+        else
         {
             Write-Verbose -Message $cmdOutput
         }
-    } 
+    }
     catch
     {
         $PSCmdlet.ThrowTerminatingError($_)
-    } 
+    }
     finally
     {
         Remove-Item -Path $stdOutTempFile.FullName, $stdErrTempFile.FullName -Force
@@ -238,7 +238,7 @@ function New-PackageSpec
 
         [Parameter(Mandatory)]
         [ValidateNotNullOrEmpty()]
-        [ValidateScript({ 
+        [ValidateScript({
                 if ($_ -notmatch '\.nuspec$')
                 {
                     throw 'Invalid file path. Extension must be NUSPEC.'
@@ -378,7 +378,7 @@ function Publish-Package
     (
         [Parameter(Mandatory)]
         [ValidateNotNullOrEmpty()]
-        [ValidateScript({ 
+        [ValidateScript({
                 if ($_ -notmatch '\.nupkg$')
                 {
                     throw 'Invalid file path. Extension must be NUPKG.'
@@ -492,7 +492,7 @@ function Remove-Package
                 $nuGetArgs.ApiKey = $NuGetApiKey
             }
 
-            
+
             Invoke-NuGet -Action 'delete' -Arguments $nuGetArgs
         }
         catch
@@ -691,7 +691,7 @@ function Publish-Module
                     $pkg = New-PmModulePackage @newPkgParams
                     Publish-PmPackage @publishPackParams -Path $pkg.FullName
                 })
-            
+
         }
         catch
         {
@@ -777,17 +777,17 @@ function Find-Package
             if ($packageList -notmatch 'no packages found')
             {
                 @($packageList).foreach({
-                        $split = $_.Split(' ') 
+                        $split = $_.Split(' ')
                         $version = $split[-1]
                         if ($split.Count -eq 2)
-                        { 
-                            $packageName = $split[0] 
+                        {
+                            $packageName = $split[0]
                         }
                         else
-                        { 
+                        {
                             $packageName = $split[0..-2] -join ' '
-                        } 
-                        [pscustomobject]@{Name = $packageName; Version = $version}  
+                        }
+                        [pscustomobject]@{Name = $packageName; Version = $version}
                     })
             }
         }
@@ -807,7 +807,7 @@ function Publish-DscResource
     (
         [Parameter(Mandatory)]
         [ValidateNotNullOrEmpty()]
-        [ValidateScript({ 
+        [ValidateScript({
                 if (-not (Get-DscResource -Name $_ -ErrorAction Ignore))
                 {
                     throw "The DSC resource [$($_)] was not found"
@@ -847,10 +847,10 @@ function Publish-DscResource
             {
                 $publishPackParams.ApiKey = $NuGetApiKey
             }
-			
+
             ## TODO: Need to group these dependency checks together if multiple resources are passed so the same thing
             ## isn't done for every resource. Could also makes these parallel
-			
+
             ## Ensure any and all dependent modules are available before proceeding
             @($Name).foreach({
                     $resourceName = $_
@@ -859,7 +859,7 @@ function Publish-DscResource
                     if ($dscModuleDeps = Get-DependentModule -ModuleName $resourceModule.Name)
                     {
                         Write-Verbose -Message "Found [$($dscModuleDeps.Count)] dependent module(s)..."
-						
+
                         $depModulesInFeed = Find-Package -Name $dscModuleDeps.Name
                         @($dscModuleDeps).foreach({
                                 if ($_.Name -notin $depModulesInFeed.Name)
@@ -884,7 +884,7 @@ function Publish-DscResource
                                         }
                                     }
                                 }
-								
+
                             })
                     }
                     $newPkgParams = @{
