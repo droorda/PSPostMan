@@ -223,6 +223,9 @@ function New-Package
     begin
     {
         $ErrorActionPreference = 'Stop'
+        if ($Version.Revision -eq 0 ){
+            $Version = [version]$Version.ToString(3)
+        }
     }
     process
     {
@@ -268,11 +271,6 @@ function New-Package
 
             if ($PassThru)
             {
-                if ($Version.Revision -eq 0 ){
-                    if (Test-Path -Path "$PackageFolderPath\$Name.$($Version.ToString(3)).nupkg") {
-                        Rename-Item -Path "$PackageFolderPath\$Name.$($Version.ToString(3)).nupkg" -NewName "$Name.$Version.nupkg"
-                    }
-                }
                 Get-Item -Path "$PackageFolderPath\$Name.$Version.nupkg"
             }
         }
