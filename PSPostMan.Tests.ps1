@@ -52,7 +52,7 @@ InModuleScope $ThisModuleName {
 			Author = 'Adam Bertram'
 			PrivateData = @{
 				PSData = @{
-					ProjectUri = 'projecturihere'
+					ProjectUri = 'https://github.com/droorda/PSPostMan'
 					Tags = @('PSModule')
 				}
 			}
