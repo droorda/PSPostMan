@@ -138,16 +138,16 @@ function New-Package
                     $true
                 }
             })]
-        [string]$Path,
-
+        [string]$Path
+        ,
         [Parameter(Mandatory)]
         [ValidateNotNullOrEmpty()]
-        [version]$Version,
-
+        [version]$Version
+        ,
         [Parameter()]
         [ValidateNotNullOrEmpty()]
-        [string]$Name = (Split-Path -Path $Path -Leaf),
-
+        [string]$Name = (Split-Path -Path $Path -Leaf)
+        ,
         [Parameter()]
         [ValidateNotNullOrEmpty()]
         [ValidateScript({
@@ -160,44 +160,44 @@ function New-Package
                     $true
                 }
             })]
-        [string]$PackageFolderPath = '.',
-
+        [string]$PackageFolderPath = '.'
+        ,
         [Parameter()]
         [ValidateNotNullOrEmpty()]
-        [string]$Authors,
-
+        [string]$Authors
+        ,
         [Parameter()]
         [ValidateNotNullOrEmpty()]
-        [string]$Id,
-
+        [string]$Id
+        ,
         [Parameter()]
         [ValidateNotNullOrEmpty()]
-        [string]$Description,
-
+        [string]$Description
+        ,
         [Parameter()]
         [ValidateNotNullOrEmpty()]
-        [string]$Owners,
-
+        [string]$Owners
+        ,
         [Parameter()]
         [ValidateNotNullOrEmpty()]
-        [string]$LicenseUrl,
-
+        [string]$LicenseUrl
+        ,
         [Parameter()]
         [ValidateNotNullOrEmpty()]
-        [string]$ProjectUrl,
-
+        [string]$ProjectUrl
+        ,
         [Parameter()]
         [ValidateNotNullOrEmpty()]
-        [string]$IconUrl,
-
+        [string]$IconUrl
+        ,
         [Parameter()]
         [ValidateNotNullOrEmpty()]
-        [string]$ReleaseNotes,
-
+        [string]$ReleaseNotes
+        ,
         [Parameter()]
         [ValidateNotNullOrEmpty()]
-        [string[]]$Tags,
-
+        [string[]]$Tags
+        ,
         [Parameter()]
         [ValidateNotNullOrEmpty()]
         [ValidateScript({
@@ -210,22 +210,25 @@ function New-Package
                     $true
                 }
             })]
-        [hashtable[]]$Dependencies,
-
+        [hashtable[]]$Dependencies
+        ,
         [Parameter()]
         [ValidateNotNullOrEmpty()]
-        [string[]]$files,
-
+        [string[]]$files
+        ,
         [Parameter()]
         [ValidateNotNullOrEmpty()]
         [switch]$PassThru
+        ,
+        [switch]
+        $Beta
     )
     begin
     {
         $ErrorActionPreference = 'Stop'
-        if ($Version.Revision -eq 0 ){
-            $Version = [version]$Version.ToString(3)
-        }
+#        if ($Version.Revision -eq 0 ){
+#            $Version = [version]$Version.ToString(3)
+#        }
     }
     process
     {
@@ -253,6 +256,7 @@ function New-Package
                 Name = $Name
                 FilePath = $tempSpecFilePath
                 Force = $true
+                Beta = $Beta
             }
             @($specParamNames).where({ $PSBoundParameters.ContainsKey($_) }).foreach({
                     $specParams[$_] = (Get-Variable -Name $_).Value
@@ -271,7 +275,13 @@ function New-Package
 
             if ($PassThru)
             {
-                Get-Item -Path "$PackageFolderPath\$Name.$Version.nupkg"
+                if ($Beta) {$BetaString = "-beta"} else {$BetaString = ""}
+                if ($Version.Revision -eq 0 ){
+                    if (Test-Path -Path "$PackageFolderPath\$Name.$($Version.ToString(3))$BetaString.nupkg") {
+                        Rename-Item -Path "$PackageFolderPath\$Name.$($Version.ToString(3))$BetaString.nupkg" -NewName "$Name.$Version$BetaString.nupkg"
+                    }
+                }
+                Get-Item -Path "$PackageFolderPath\$Name.$Version$BetaString.nupkg"
             }
         }
         catch
@@ -360,8 +370,8 @@ function New-PackageSpec
     (
         [Parameter(Mandatory)]
         [ValidateNotNullOrEmpty()]
-        [string]$Name,
-
+        [string]$Name
+        ,
         [Parameter(Mandatory)]
         [ValidateNotNullOrEmpty()]
         [ValidateScript({
@@ -374,59 +384,62 @@ function New-PackageSpec
                     $true
                 }
             })]
-        [string]$FilePath,
-
+        [string]$FilePath
+        ,
         [Parameter()]
         [ValidateNotNullOrEmpty()]
-        [switch]$Force,
-
+        [switch]$Force
+        ,
         [Parameter()]
         [ValidateNotNullOrEmpty()]
-        [version]$Version = '1.0.0',
-
+        [version]$Version = '1.0.0'
+        ,
         [Parameter()]
         [ValidateNotNullOrEmpty()]
-        [string]$Authors = 'people',
-
+        [string]$Authors = 'people'
+        ,
         [Parameter()]
         [ValidateNotNullOrEmpty()]
-        [string]$Id = $Name,
-
+        [string]$Id = $Name
+        ,
         [Parameter()]
         [ValidateNotNullOrEmpty()]
-        [string]$Description = $Name,
-
+        [string]$Description = $Name
+	,
         [Parameter()]
         [ValidateNotNullOrEmpty()]
-        [string]$Owners,
-
+        [string]$Owners
+        ,
         [Parameter()]
         [ValidateNotNullOrEmpty()]
-        [string]$LicenseUrl,
-
+        [string]$LicenseUrl
+        ,
         [Parameter()]
         [ValidateNotNullOrEmpty()]
-        [string]$ProjectUrl,
-
+        [string]$ProjectUrl
+        ,
         [Parameter()]
         [ValidateNotNullOrEmpty()]
-        [string]$IconUrl,
-
+        [string]$IconUrl
+        ,
         [Parameter()]
         [ValidateNotNullOrEmpty()]
-        [string]$ReleaseNotes,
-
+        [string]$ReleaseNotes
+        ,
         [Parameter()]
         [ValidateNotNullOrEmpty()]
-        [string[]]$Tags,
-
+        [string[]]$Tags
+        ,
         [Parameter()]
         [ValidateNotNullOrEmpty()]
-        [string[]]$files,
-
+        [string[]]$files
+        ,
         [Parameter()]
         [ValidateNotNullOrEmpty()]
         [hashtable[]]$Dependencies
+        ,
+        [switch]
+        $Beta
     )
     begin
     {
@@ -446,7 +459,7 @@ function New-PackageSpec
 <package>
   <metadata>
     <id>$Id</id>
-    <version>$($Version.ToString())</version>
+    <version>$($Version.ToString())$(if($beta){"-Beta"})</version>
     <authors>$Authors</authors>
     <description>$Description</description>
   </metadata>
@@ -694,11 +707,14 @@ function New-ModulePackage
     (
         [Parameter(Mandatory)]
         [ValidateNotNullOrEmpty()]
-        [string]$Path,
-
+        [string]$Path
+        ,
         [Parameter()]
         [ValidateNotNullOrEmpty()]
         [switch]$PassThru
+        ,
+        [switch]
+        $Beta
     )
     ## TODO ADB: Get all manifest attributes
     $moduleName = ($Path | Split-Path -Leaf)
@@ -716,6 +732,7 @@ function New-ModulePackage
         Name = $moduleName
         Path = $Path
         PackageFolderPath = $Path
+        Beta = $Beta
     }
     if ($PassThru.IsPresent)
     {
