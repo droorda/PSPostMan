@@ -43,7 +43,7 @@ Function Invoke-PSDeploy {
         Set-PMPackageCert `
             -path $ModulePackage.fullname `
             -CertificateFingerprint $Certificate.Thumbprint `
-            -Timestamper 'http://sha256timestamp.ws.symantec.com/sha256/timestamp' `
+            -Timestamper 'http://timestamp.digicert.com' `
             -Verbose
         Write-Host "Publishing Nuget package" -ForegroundColor Cyan
         Publish-PMPackage `
