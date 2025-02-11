@@ -50,10 +50,16 @@ Function Push-BuildManifest {
         $GitStatus = Get-GitStatus
     }
 
-    $BHPSModuleManifestFile = $BHPSModuleManifest.FullName | Resolve-Path -Relative
-    Write-Verbose "  Location '$((Get-Location).Path)'"
-    Write-Host "git add $BHPSModuleManifestFile" -ForegroundColor Cyan
-    git add $BHPSModuleManifestFile
+    (Get-Item -Path $BHPSModuleManifest.FullName).FullName
+
+    $BHPSModuleManifestFile = ((Get-Item $BHPSModuleManifest).FullName | Resolve-Path -Relative).TrimStart('.\').Replace('\','/')
+
+    $GitStatus = Get-GitStatus
+    $GitStatus.Working | Where-Object { $_ -eq $BHPSModuleManifestFile } | ForEach-Object {
+        Write-Host "  Adding $_" -ForegroundColor Magenta
+        git add $_
+    }
+
     Start-Sleep -Seconds 1
     if ($Beta) {
         $BuildVersion = "$BuildVersion-Beta"
