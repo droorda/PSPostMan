@@ -2,11 +2,11 @@ Function Push-BuildManifest {
     [CmdletBinding()]
     PARAM(
         [Parameter(Mandatory=$true)]
-        [string]
+        [System.IO.FileInfo]
         $Repository
         ,
         [Parameter(Mandatory=$true)]
-        [string]
+        [System.IO.FileInfo]
         $BHPSModuleManifest
         ,
         [Parameter(Mandatory=$true)]
@@ -17,11 +17,14 @@ Function Push-BuildManifest {
         $Beta
     )
 
-    Write-Verbose "-------------Start $($myInvocation.InvocationName) -----------------" -Verbose
-    Write-Verbose "  From Script:'$($myInvocation.ScriptName)' - At Line:$($myInvocation.ScriptLineNumber) char:$($myInvocation.OffsetInLine)" -Verbose
-    Write-Verbose "  Line '$($myInvocation.Line.Trim())'" -Verbose
-    $myInvocation.BoundParameters.GetEnumerator()  | ForEach-Object { Write-Verbose "  BoundParameter   : '$($_.key)' = '$($_.Value)'" -Verbose}
-    $myInvocation.UnboundArguments | ForEach-Object { Write-Verbose "  UnboundArguments : '$_'" -Verbose}
+    Write-Verbose "-------------Start $($myInvocation.InvocationName) -----------------"
+    Write-Verbose "  From Script:'$($myInvocation.ScriptName)' - At Line:$($myInvocation.ScriptLineNumber) char:$($myInvocation.OffsetInLine)"
+    Write-Verbose "  Line '$($myInvocation.Line.Trim())'"
+    Write-Verbose "  Location '$((Get-Location).Path)'"
+    $myInvocation.BoundParameters.GetEnumerator()  | ForEach-Object { Write-Verbose "  BoundParameter   : '$($_.key)' = '$($_.Value)'"}
+    $myInvocation.UnboundArguments | ForEach-Object { Write-Verbose "  UnboundArguments : '$_'"}
+
+    Push-Location -Path $Repository
 
     Write-Host "Checking $Repository" -ForegroundColor Cyan
     $GitStatus = Get-GitStatus
@@ -46,8 +49,11 @@ Function Push-BuildManifest {
         }
         $GitStatus = Get-GitStatus
     }
-    Write-Host "git add $BHPSModuleManifest" -ForegroundColor Cyan
-    git add (Split-Path -Path $BHPSModuleManifest -Leaf)
+
+    $BHPSModuleManifestFile = $BHPSModuleManifest.FullName | Resolve-Path -Relative
+    Write-Verbose "  Location '$((Get-Location).Path)'"
+    Write-Host "git add $BHPSModuleManifestFile" -ForegroundColor Cyan
+    git add $BHPSModuleManifestFile
     Start-Sleep -Seconds 1
     if ($Beta) {
         $BuildVersion = "$BuildVersion-Beta"
@@ -62,5 +68,5 @@ Function Push-BuildManifest {
         Write-Host "  Pushing changes" -ForegroundColor Magenta
         git push #| Write-Verbose
     }
-
+    Pop-Location
 }

@@ -17,16 +17,16 @@ Function Invoke-PSDeploy {
         $Beta
     )
 
-    Write-Verbose "-------------Start $($myInvocation.InvocationName) -----------------" -Verbose
-    Write-Verbose "  From Script:'$($myInvocation.ScriptName)' - At Line:$($myInvocation.ScriptLineNumber) char:$($myInvocation.OffsetInLine)" -Verbose
-    Write-Verbose "  Line '$($myInvocation.Line.Trim())'" -Verbose
-    $myInvocation.BoundParameters.GetEnumerator()  | ForEach-Object { Write-Verbose "  BoundParameter   : '$($_.key)' = '$($_.Value)'" -Verbose}
-    $myInvocation.UnboundArguments | ForEach-Object { Write-Verbose "  UnboundArguments : '$_'" -Verbose}
+    Write-Verbose "-------------Start $($myInvocation.InvocationName) -----------------"
+    Write-Verbose "  From Script:'$($myInvocation.ScriptName)' - At Line:$($myInvocation.ScriptLineNumber) char:$($myInvocation.OffsetInLine)"
+    Write-Verbose "  Line '$($myInvocation.Line.Trim())'"
+    $myInvocation.BoundParameters.GetEnumerator()  | ForEach-Object { Write-Verbose "  BoundParameter   : '$($_.key)' = '$($_.Value)'"}
+    $myInvocation.UnboundArguments | ForEach-Object { Write-Verbose "  UnboundArguments : '$_'"}
 
     Write-Host "Creating Nuget package" -ForegroundColor Cyan
 
     Try {
-        $ModulePackage = New-PMModulePackage -Verbose -PassThru -Path "$Path\$(split-path $Path -Leaf)" -Beta:$Beta
+        $ModulePackage = New-PMModulePackage -PassThru -Path "$Path\$(split-path $Path -Leaf)" -Beta:$Beta
     } Catch {
         Write-Warning "New-PMModulePackage : $($_.exception.message)"
         $_
