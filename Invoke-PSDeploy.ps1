@@ -1,13 +1,16 @@
 Function Invoke-PSDeploy {
     [CmdletBinding()]
     PARAM(
+        [Parameter(Mandatory=$true)]
         [string]
         $Path
         ,
+        [Parameter(Mandatory=$true)]
         [string]
         $FeedUrl
         ,
-        [string]
+        [Parameter(Mandatory=$true)]
+        [securestring]
         $ApiKey
         ,
         [switch]
@@ -41,20 +44,34 @@ Function Invoke-PSDeploy {
         Write-Host "Signing Nuget package" -ForegroundColor Cyan
         $Certificate = Get-ChildItem -Path Cert:\CurrentUser\My -CodeSigningCert | Where-Object {$_.NotAfter -gt (Get-date)}| Sort-Object NotAfter -Descending | Select-Object -First 1
 
-        Set-PMPackageCert `
-            -path $ModulePackage.fullname `
-            -CertificateFingerprint $Certificate.Thumbprint `
-            -Timestamper 'http://timestamp.digicert.com' `
-            -Verbose
-        Write-Host "Publishing Nuget package" -ForegroundColor Cyan
-        Publish-PMPackage `
-            -Path $ModulePackage.fullname `
-            -FeedUrl $FeedUrl `
-            -ApiKey $ApiKey `
-            -Verbose
-        # Get-ChildItem "$Path\Builds" | Sort-Object Name
+        $Params = @{
+            path = $ModulePackage.fullname
+            CertificateFingerprint = $Certificate.Thumbprint
+            Timestamper = 'http://timestamp.digicert.com'
+            Verbose =$VerbosePreference
+        }
+        Try {
+            Set-PMPackageCert @Params
+            $PackageSigned = $True
+        } Catch {
+            Write-Warning "Set-PMPackageCert : $($_.exception.message)"
+            $PackageSigned = $false
+        }
+        if ($PackageSigned) {
+            Write-Host "Publishing Nuget package" -ForegroundColor Cyan
+            $Params = @{
+                Path = $ModulePackage.fullname
+                FeedUrl = $FeedUrl
+                ApiKey = $([Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR($ApiKey)))
+                Verbose = $VerbosePreference
+            }
+            Write-Verbose "Publish-PMPackage`n$($Params | Format-Table | Out-String)"
+            Try {
+                Publish-PMPackage @Params
+            } Catch {
+                Write-Warning "Publish-PMPackage : $($_.exception.message)"
+            }
+        }
         Remove-Item -Path $ModulePackage -Force
     }
-
-
 }

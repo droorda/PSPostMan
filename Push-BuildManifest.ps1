@@ -1,11 +1,15 @@
-Function Invoke-PSDeploy {
+Function Push-BuildManifest {
+    [CmdletBinding()]
     PARAM(
+        [Parameter(Mandatory=$true)]
         [string]
         $Repository
         ,
+        [Parameter(Mandatory=$true)]
         [string]
         $BHPSModuleManifest
         ,
+        [Parameter(Mandatory=$true)]
         [Version]
         $BuildVersion
         ,
@@ -42,9 +46,9 @@ Function Invoke-PSDeploy {
         }
         $GitStatus = Get-GitStatus
     }
-    git add $BHPSModuleManifest
+    Write-Host "git add $BHPSModuleManifest" -ForegroundColor Cyan
+    git add (Split-Path -Path $BHPSModuleManifest -Leaf)
     Start-Sleep -Seconds 1
-    $BuildVersion = $env:Version
     if ($Beta) {
         $BuildVersion = "$BuildVersion-Beta"
     }
