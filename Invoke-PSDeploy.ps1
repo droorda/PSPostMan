@@ -1,4 +1,5 @@
 Function Invoke-PSDeploy {
+    [CmdletBinding()]
     PARAM(
         [string]
         $Path
